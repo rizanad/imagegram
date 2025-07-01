@@ -4,44 +4,19 @@ import Post from "../../components/post";
 import UserList from "../../components/userList";
 import FetchData, { PostType } from "./FetchData";
 import { auth } from "../../firebaseConfig";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useProfile } from "../../context/profileContext";
 import newAvatar from "../../assets/newAvatar.jpg";
 import Likes from "../../components/Likes&Comments/Likes";
 import Comments from "../../components/Likes&Comments/Comments";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../../firebaseConfig";
-import { useUserAuth } from "../../context/userAuthContext";
 
 const Home = () => {
   const { loading, posts } = FetchData();
   const { profilePicUrl, loadingProfilePic, refreshProfilePic } = useProfile();
-  const { user } = useUserAuth();
-
-  const [tab, setTab] = useState<"following" | "suggested">("following");
-  const [followingIds, setFollowingIds] = useState<string[]>([]);
-  const [followingLoading, setFollowingLoading] = useState(true);
 
   const defaultImage = newAvatar;
-
-  useEffect(() => {
-    const fetchFollowing = async () => {
-      if (!user) return;
-      setFollowingLoading(true);
-      try {
-        const followingSnapshot = await getDocs(
-          collection(db, `users/${user.uid}/following`)
-        );
-        const ids = followingSnapshot.docs.map((doc) => doc.id);
-        setFollowingIds(ids);
-      } catch (e) {
-        setFollowingIds([]);
-      } finally {
-        setFollowingLoading(false);
-      }
-    };
-    fetchFollowing();
-  }, [user]);
 
   // Debugging
   useEffect(() => {
@@ -67,7 +42,7 @@ const Home = () => {
     refreshProfilePic();
   };
 
-  if (loading || loadingProfilePic || followingLoading) {
+  if (loading || loadingProfilePic) {
     return (
       <Layout>
         <div className="flex justify-center min-h-screen w-full bg-gray-50 text-black overflow-hidden animate-pulse">
@@ -124,71 +99,33 @@ const Home = () => {
     );
   }
 
-  // Filter posts for 'Following' tab
-  const filteredPosts = posts.filter((post) =>
-    followingIds.includes(post.userId)
-  );
-
   return (
     <Layout>
       <div className="flex justify-center min-h-screen w-full bg-gray-50 text-black overflow-hidden">
         <div className="flex w-full max-w-[1100px] pt-4 px-4">
           {/* Posts Feed */}
           <div className="flex-1 max-w-[700px] mr-8 overflow-y-auto h-[calc(100vh-4rem)] pb-4 pr-2">
-            {/* Tab Bar */}
-            <div className="flex border-b border-gray-200 mb-4">
-              <button
-                className={`px-6 py-2 -mb-px border-b-2 transition-colors duration-200 focus:outline-none ${
-                  tab === "following"
-                    ? "border-blue-500 text-blue-600 font-semibold"
-                    : "border-transparent text-gray-500 hover:text-blue-500"
-                }`}
-                onClick={() => setTab("following")}
-              >
-                Following
-              </button>
-              <button
-                className={`px-6 py-2 -mb-px border-b-2 transition-colors duration-200 focus:outline-none ${
-                  tab === "suggested"
-                    ? "border-blue-500 text-blue-600 font-semibold"
-                    : "border-transparent text-gray-500 hover:text-blue-500"
-                }`}
-                onClick={() => setTab("suggested")}
-              >
-                Suggested for you
-              </button>
-            </div>
             <div className="space-y-6">
-              {tab === "following" ? (
-                filteredPosts.length > 0 ? (
-                  filteredPosts.map((post: PostType) => (
-                    <Post
-                      key={post.id}
-                      userId={post.userId}
-                      username={post.username}
-                      userImage={post.userImage}
-                      imageUrl={post.imageUrl}
-                      caption={post.caption}
-                      likes={<Likes postId={post.id} />}
-                      comments={
-                        <Comments
-                          postId={post.id}
-                          initialComments={post.comments}
-                        />
-                      }
-                      timestamp={post.timestamp}
-                    />
-                  ))
-                ) : (
-                  <div className="text-center text-gray-400 py-8">
-                    No posts from people you follow yet.
-                  </div>
-                )
-              ) : (
-                <div className="text-center text-gray-400 py-8">
-                  No suggestions yet.
-                </div>
-              )}
+              {posts.map((post: PostType) => {
+                return (
+                  <Post
+                    key={post.id}
+                    userId={post.userId}
+                    username={post.username}
+                    userImage={post.userImage}
+                    imageUrl={post.imageUrl}
+                    caption={post.caption}
+                    likes={<Likes postId={post.id} />}
+                    comments={
+                      <Comments
+                        postId={post.id}
+                        initialComments={post.comments}
+                      />
+                    }
+                    timestamp={post.timestamp}
+                  />
+                );
+              })}
             </div>
           </div>
 
